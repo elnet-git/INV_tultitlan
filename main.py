@@ -5,15 +5,22 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+# =============================
+# Configuración
+# =============================
 DATA_PATH = "data"
 os.makedirs(DATA_PATH, exist_ok=True)
 
 INVENTARIO_FILE = os.path.join(DATA_PATH, "inventarios_recibidos.json")
 JSON_AGENCIA = os.path.join(DATA_PATH, "inventario_render.json")
 
+# CAMBIA ESTE NOMBRE SEGÚN LA AGENCIA
 NOMBRE_AGENCIA = "tultitlan"
 
 
+# =============================
+# Funciones
+# =============================
 def cargar_inventario():
     if not os.path.exists(INVENTARIO_FILE):
         return []
@@ -29,9 +36,12 @@ def guardar_inventario(data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 
+# =============================
+# Rutas
+# =============================
 @app.route("/")
 def home():
-    return f"Servidor PROXI JQ Motors {NOMBRE_AGENCIA} activo."
+    return f"Servidor PROXI JQ Motors ({NOMBRE_AGENCIA}) activo."
 
 
 @app.route("/inventario", methods=["POST"])
@@ -46,7 +56,8 @@ def recibir_inventario():
             "descripcion": i.get("descripcion", ""),
             "stock": i.get("stock", 0),
             "agencia": agencia
-        } for i in inventario
+        }
+        for i in inventario
     ]
 
     guardar_inventario(inventario_final)
@@ -81,12 +92,17 @@ def actualizar_desde_matriz():
             "descripcion": i.get("descripcion", ""),
             "stock": i.get("stock", 0),
             "agencia": NOMBRE_AGENCIA
-        } for i in inventario_real
+        }
+        for i in inventario_real
     ]
 
     guardar_inventario(inventario_final)
     return jsonify({"status": "actualizado"})
 
 
+# =============================
+# Render requiere host=0.0.0.0
+# =============================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5003)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
