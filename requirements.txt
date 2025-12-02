@@ -1,0 +1,15 @@
+Flask
+gunicorn
+reportlab
+pandas
+openpyxl
+numpy
+requests
+flask-cors
+
+
+
+
+
+
+
