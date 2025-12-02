@@ -6,13 +6,17 @@ app = Flask(__name__)
 CORS(app)
 
 INVENTARIO_FILE = "inventarios_recibidos.json"
-JSON_AGENCIA = r"C:\Users\infob\Desktop\tultitlan\Archivos\Export\inventario_render.json"
+JSON_AGENCIA = "inventario_render.json"
+NOMBRE_AGENCIA = "tultitlan"
 
 def cargar_inventario():
     if not os.path.exists(INVENTARIO_FILE):
         return []
-    with open(INVENTARIO_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(INVENTARIO_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return []
 
 def guardar_inventario(data):
     with open(INVENTARIO_FILE, "w", encoding="utf-8") as f:
@@ -20,14 +24,23 @@ def guardar_inventario(data):
 
 @app.route("/")
 def home():
-    return "Servidor PROXI JQ Motors TULTITLÁN activo."
+    return f"Servidor PROXI JQ Motors {NOMBRE_AGENCIA} activo."
 
 @app.route("/inventario", methods=["POST"])
 def recibir_inventario():
-    data = request.get_json()
-    agencia = data.get("agencia")
+    data = request.get_json() or {}
+    agencia = data.get("agencia", NOMBRE_AGENCIA)
     inventario = data.get("inventario", [])
-    inventario_final = [{"codigo": i.get("codigo",""), "descripcion": i.get("descripcion",""), "stock": i.get("stock",0), "agencia": agencia} for i in inventario]
+
+    inventario_final = [
+        {
+            "codigo": i.get("codigo", ""),
+            "descripcion": i.get("descripcion", ""),
+            "stock": i.get("stock", 0),
+            "agencia": agencia
+        } for i in inventario
+    ]
+
     guardar_inventario(inventario_final)
     return jsonify({"status": "actualizado"})
 
@@ -44,11 +57,24 @@ def limpiar_inventario():
 def actualizar_desde_matriz():
     if not os.path.exists(JSON_AGENCIA):
         return jsonify({"status": "no_encontrado"})
-    with open(JSON_AGENCIA, "r", encoding="utf-8") as f:
-        inventario_real = json.load(f)
-    inventario_final = [{"codigo": i.get("codigo",""), "descripcion": i.get("descripcion",""), "stock": i.get("stock",0), "agencia": "tultitlan"} for i in inventario_real]
+
+    try:
+        with open(JSON_AGENCIA, "r", encoding="utf-8") as f:
+            inventario_real = json.load(f)
+    except:
+        return jsonify({"status": "error_lectura"})
+
+    inventario_final = [
+        {
+            "codigo": i.get("codigo", ""),
+            "descripcion": i.get("descripcion", ""),
+            "stock": i.get("stock", 0),
+            "agencia": NOMBRE_AGENCIA
+        } for i in inventario_real
+    ]
+
     guardar_inventario(inventario_final)
     return jsonify({"status": "actualizado"})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5003)
+    app.run(host="0.0.0.0", port=5005)
