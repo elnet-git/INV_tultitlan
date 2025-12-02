@@ -1,15 +1,3 @@
-Flask
 gunicorn
-reportlab
-pandas
-openpyxl
-numpy
-requests
-flask-cors
-
-
-
-
-
-
-
+Flask==2.3.2
+flask-cors==4.0.0
