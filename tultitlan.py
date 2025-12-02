@@ -26,10 +26,42 @@ import shutil
 import base64
 
 # ===============================
-# CONFIG GITHUB (API) - EDITA TOKEN
+# RUTAS Y ARCHIVOS LOCALES
 # ===============================
-GITHUB_TOKEN_API = os.getenv("GITHUB_TOKEN_API")  # variable de entorno
-GITHUB_REPO_API = "elnet-git/INV_tultitlan"         # repositorio (user/repo)
+def resource_path(relative_path):
+    """Obtiene la ruta absoluta de recursos, compatible con PyInstaller"""
+    try:
+        base_path = Path(sys._MEIPASS)
+    except Exception:
+        base_path = Path(__file__).parent.resolve()
+    return base_path / relative_path
+
+CARPETA_DATOS = resource_path("Archivos")
+CARPETA_EXCEL = CARPETA_DATOS / "Excel"
+CARPETA_EXPORT = CARPETA_DATOS / "Export"
+LOGO_DIR = CARPETA_DATOS / "LOGO"
+CARPETA_DESCARGAS = Path.home() / "Downloads"
+
+for carpeta in [CARPETA_DATOS, CARPETA_EXCEL, CARPETA_EXPORT, LOGO_DIR, CARPETA_DESCARGAS]:
+    carpeta.mkdir(parents=True, exist_ok=True)
+
+REPO_DIR = resource_path(".")
+ARCHIVO_EXCEL = CARPETA_EXCEL / "inventario.xlsx"
+ARCHIVO_JSON = CARPETA_EXPORT / "inventario_render.json"
+BRANCH = "main"
+
+ARCHIVO_INVENTARIO = CARPETA_EXCEL / "inventario.xlsx"
+ARCHIVO_VENTAS = CARPETA_EXCEL / "ventas.xlsx"
+ARCHIVO_PEDIDOS = CARPETA_EXCEL / "pedidos.xlsx"
+ARCHIVO_TALLER = CARPETA_EXCEL / "taller.xlsx"
+ARCHIVO_COTIZACIONES = CARPETA_EXCEL / "cotizaciones.xlsx"
+ARCHIVO_MOTOS = CARPETA_EXCEL / "motos_insumos.xlsx"
+
+# ===============================
+# CONFIG GITHUB
+# ===============================
+GITHUB_TOKEN_API = os.getenv("GITHUB_TOKEN_API")
+GITHUB_REPO_API = "elnet-git/INV_tultitlan"
 GITHUB_PATH_API = "inventario_render.json"
 GITHUB_BRANCH = "main"
 
@@ -50,61 +82,6 @@ def tarea_automatica():
         except Exception as e:
             print("❌ Error subir_json_a_github_api:", e)
 
-# ===============================
-# SERVIDOR FLASK VACÍO
-# ===============================
-app_flask = Flask(__name__)
-CORS(app_flask)
-
-# ===============================
-# FUNCIONES DE GITHUB EN SEGUNDO PLANO (CLI ya existente)
-# ===============================
-def actualizar_github():
-    try:
-        repo_dir = Path(__file__).parent
-        subprocess.run(["git", "add", "."], cwd=repo_dir, check=True)
-        msg = f"Actualización automática {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        subprocess.run(["git", "commit", "-m", msg], cwd=repo_dir, check=True)
-        subprocess.run(["git", "push", "origin", "main"], cwd=repo_dir, check=True)
-        print("✅ Cambios subidos a GitHub correctamente.")
-    except subprocess.CalledProcessError as e:
-        print("❌ Error al actualizar GitHub:", e)
-
-def hilo_github(intervalo_minutos=10):
-    while True:
-        actualizar_github()
-        time.sleep(intervalo_minutos * 60)
-
-# ===============================
-# RUTAS Y ARCHIVOS
-# ===============================
-def resource_path(relative_path):
-    try:
-        base_path = Path(sys._MEIPASS)
-    except Exception:
-        base_path = Path(__file__).parent.resolve()
-    return base_path / relative_path
-
-CARPETA_DATOS = resource_path("Archivos")
-CARPETA_EXCEL = CARPETA_DATOS / "Excel"
-CARPETA_EXPORT = CARPETA_DATOS / "Export"
-LOGO_DIR = CARPETA_DATOS / "LOGO"
-CARPETA_DESCARGAS = Path.home() / "Downloads"
-
-for carpeta in [CARPETA_DATOS, CARPETA_EXCEL, CARPETA_EXPORT, LOGO_DIR, CARPETA_DESCARGAS]:
-    carpeta.mkdir(parents=True, exist_ok=True)
-
-REPO_DIR = resource_path(".")
-ARCHIVO_EXCEL = CARPETA_EXCEL / "inventario.xlsx"
-ARCHIVO_JSON = CARPETA_EXPORT / "inventario_render.json"  # JSON local exportado
-BRANCH = "main"
-
-ARCHIVO_INVENTARIO = CARPETA_EXCEL / "inventario.xlsx"
-ARCHIVO_VENTAS = CARPETA_EXCEL / "ventas.xlsx"
-ARCHIVO_PEDIDOS = CARPETA_EXCEL / "pedidos.xlsx"
-ARCHIVO_TALLER = CARPETA_EXCEL / "taller.xlsx"
-ARCHIVO_COTIZACIONES = CARPETA_EXCEL / "cotizaciones.xlsx"
-ARCHIVO_MOTOS = CARPETA_EXCEL / "motos_insumos.xlsx"
 
 # ===============================
 # FUNCIONES AUXILIARES
@@ -131,64 +108,17 @@ def load_file(path: Path, columns):
 def save_df(path: Path, df):
     df.to_excel(path, index=False, engine="openpyxl")
 
-# --- Corrección: obtener_estado_codigo flexible y alias de guardado ---
 def save_inventario_file(path_or_df, maybe_df=None):
-    """
-    Compatibilidad: si se llama con save_inventario_file(df) -> guarda en ARCHIVO_INVENTARIO,
-    si se llama con save_inventario_file(path, df) -> guarda en path.
-    (Evita NameError si en otras partes se invoca save_inventario_file)
-    """
     try:
         if isinstance(path_or_df, pd.DataFrame) and maybe_df is None:
-            # save_inventario_file(df)
             save_df(ARCHIVO_INVENTARIO, path_or_df)
         elif isinstance(path_or_df, (str, Path)) and isinstance(maybe_df, pd.DataFrame):
             save_df(Path(path_or_df), maybe_df)
         else:
-            # fallback: si pasaron (df, None) por error
             if isinstance(maybe_df, pd.DataFrame):
                 save_df(ARCHIVO_INVENTARIO, maybe_df)
     except Exception as e:
         print("❌ Error en save_inventario_file:", e)
-
-
-def obtener_estado_codigo(codigo, df_inventario):
-    # Si df_inventario NO es DataFrame → evitar que truene
-    import pandas as pd
-    if not isinstance(df_inventario, pd.DataFrame):
-        print("⚠️ ERROR: df_inventario no es DataFrame. Valor recibido:", type(df_inventario))
-        return 0, 0
-
-    # Convertir código a string siempre
-    codigo = str(codigo).strip()
-
-    # Verificar que tenga la columna
-    if "codigo" not in df_inventario.columns:
-        print("⚠️ ERROR: El DataFrame no contiene columna 'codigo'")
-        return 0, 0
-
-    fila = df_inventario[df_inventario["codigo"].astype(str) == codigo]
-
-    if fila.empty:
-        return 0, 0
-
-    libres = int(fila["libres"].iloc[0]) if "libres" in fila else 0
-    en_taller = int(fila["en_taller"].iloc[0]) if "en_taller" in fila else 0
-
-    libres = max(0, libres)
-    en_taller = max(0, en_taller)
-
-    # Guardar cambios
-    df_inventario.loc[df_inventario["codigo"].astype(str) == codigo, "libres"] = libres
-    df_inventario.loc[df_inventario["codigo"].astype(str) == codigo, "en_taller"] = en_taller
-
-    return libres, en_taller
-
-def load_inventario_file():
-    return load_file(ARCHIVO_INVENTARIO, ["codigo", "descripcion", "ubicacion", "stock", "precio"])
-
-def load_ventas_file():
-    return load_file(ARCHIVO_VENTAS, ["fecha", "forma_pago", "codigo", "cantidad", "p_unitario", "precio", "total"])
 
 def habilitar_copia_treeview(tree):
     def copiar(event):
@@ -201,6 +131,28 @@ def habilitar_copia_treeview(tree):
         tree.clipboard_append(texto)
     tree.bind("<Control-c>", copiar)
 
+def obtener_estado_codigo(codigo, df_inventario):
+    if not isinstance(df_inventario, pd.DataFrame):
+        print("⚠️ ERROR: df_inventario no es DataFrame.")
+        return 0, 0
+    codigo = str(codigo).strip()
+    if "codigo" not in df_inventario.columns:
+        return 0, 0
+    fila = df_inventario[df_inventario["codigo"].astype(str) == codigo]
+    if fila.empty:
+        return 0, 0
+    libres = int(fila["libres"].iloc[0]) if "libres" in fila else 0
+    en_taller = int(fila["en_taller"].iloc[0]) if "en_taller" in fila else 0
+    df_inventario.loc[df_inventario["codigo"].astype(str) == codigo, "libres"] = max(0, libres)
+    df_inventario.loc[df_inventario["codigo"].astype(str) == codigo, "en_taller"] = max(0, en_taller)
+    return max(0, libres), max(0, en_taller)
+
+def load_inventario_file():
+    return load_file(ARCHIVO_INVENTARIO, ["codigo", "descripcion", "ubicacion", "stock", "precio"])
+
+def load_ventas_file():
+    return load_file(ARCHIVO_VENTAS, ["fecha", "forma_pago", "codigo", "cantidad", "p_unitario", "precio", "total"])
+
 def importar_inventario(ruta_excel: Path, controller=None):
     if not ruta_excel.exists():
         print("❌ Archivo no encontrado:", ruta_excel)
@@ -208,19 +160,15 @@ def importar_inventario(ruta_excel: Path, controller=None):
     destino = CARPETA_EXCEL / ruta_excel.name
     shutil.copy(ruta_excel, destino)
     print(f"✅ Inventario copiado a {destino}")
-
     generar_json_desde_excel()
-    # Subir por git CLI
     try:
         subir_a_github()
     except Exception as e:
-        print("❌ Error en subir_a_github (CLI):", e)
-    # Subir por API
+        print("❌ Error en subir_a_github:", e)
     try:
         subir_json_a_github_api()
     except Exception as e:
-        print("❌ Error subir_json_a_github_api:", e)
-
+        print("❌ Error en subir_json_a_github_api:", e)
     if controller:
         controller.inventario_df = load_inventario_file()
         if hasattr(controller.tab_stock, "actualizar_treeview"):
@@ -244,15 +192,14 @@ def generar_json_desde_excel():
         if ARCHIVO_EXCEL.exists():
             df = pd.read_excel(ARCHIVO_EXCEL, engine="openpyxl")
             columnas = ["codigo", "descripcion", "stock"]
-            # validar columnas presentes
             for c in columnas:
                 if c not in df.columns:
                     df[c] = ""
             df = df[columnas]
-            df["agencia"] = "mixquiahuala"  # Cambia según tu agencia
+            df["agencia"] = "mixquiahuala"
             ARCHIVO_JSON.parent.mkdir(parents=True, exist_ok=True)
             df.to_json(ARCHIVO_JSON, orient="records", indent=4, force_ascii=False)
-            print(f"[{datetime.now()}] ✅ JSON generado: {ARCHIVO_JSON} con agencia 'mixquiahuala'")
+            print(f"[{datetime.now()}] ✅ JSON generado: {ARCHIVO_JSON}")
             return True
         else:
             print(f"❌ Archivo Excel no encontrado: {ARCHIVO_EXCEL}")
@@ -262,12 +209,12 @@ def generar_json_desde_excel():
         return False
 
 # ===============================
-# SUBIR A GITHUB (CLI)
+# SUBIR A GITHUB (CLI + API)
 # ===============================
 def subir_a_github():
     try:
         if not Path(REPO_DIR).exists():
-            print(f"❌ Carpeta del repo no encontrada: {REPO_DIR}")
+            print(f"❌ Repo no encontrado: {REPO_DIR}")
             return
         os.chdir(REPO_DIR)
         subprocess.run(["git", "add", str(ARCHIVO_JSON)], check=True)
@@ -282,60 +229,39 @@ def subir_a_github():
     except Exception as e:
         print(f"❌ Error subiendo a GitHub: {e}")
 
-# ===============================
-# SUBIR JSON A GITHUB VIA API
-# ===============================
 def subir_json_a_github_api():
     if not ARCHIVO_JSON.exists():
-        print(f"❌ No existe {ARCHIVO_JSON}, nada que subir via API.")
+        print(f"❌ No existe {ARCHIVO_JSON} para subir via API.")
         return False
-
     if not GITHUB_TOKEN_API:
-        print("❌ ERROR: no se encontró la variable de entorno GITHUB_TOKEN_API")
+        print("❌ No se encontró GITHUB_TOKEN_API")
         return False
-
     with open(ARCHIVO_JSON, "r", encoding="utf-8") as f:
         contenido_json = f.read()
-
     url = f"https://api.github.com/repos/{GITHUB_REPO_API}/contents/{GITHUB_PATH_API}"
     contenido_b64 = base64.b64encode(contenido_json.encode("utf-8")).decode("utf-8")
-
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN_API}",
-        "Accept": "application/vnd.github+json"
-    }
-
-    # obtener SHA si el archivo ya existe
+    headers = {"Authorization": f"Bearer {GITHUB_TOKEN_API}", "Accept": "application/vnd.github+json"}
     resp_get = requests.get(url + f"?ref={GITHUB_BRANCH}", headers=headers, timeout=10)
-    payload = {
-        "message": f"Actualización inventario {datetime.now().isoformat()}",
-        "content": contenido_b64,
-        "branch": GITHUB_BRANCH
-    }
-
+    payload = {"message": f"Actualización inventario {datetime.now().isoformat()}", "content": contenido_b64, "branch": GITHUB_BRANCH}
     if resp_get.status_code == 200:
         sha = resp_get.json().get("sha")
         if sha:
             payload["sha"] = sha
-
     resp_put = requests.put(url, headers=headers, json=payload, timeout=15)
-
     if resp_put.status_code in (200, 201):
         print(f"✅ JSON subido a GitHub via API. Status: {resp_put.status_code}")
         return True
     else:
         print(f"❌ Error subiendo a GitHub via API. Status: {resp_put.status_code} - {resp_put.text}")
-        return False# ===============================
-# Helper: tarea que se lanza en hilo tras cambios locales
-# ===============================
+        return False
+
 def tarea_post_update_en_hilo():
-    """Genera JSON y empuja (CLI + API) en segundo plano tras una modificación local."""
     try:
         if generar_json_desde_excel():
             try:
                 subir_a_github()
             except Exception as e:
-                print("❌ Error en subir_a_github (CLI):", e)
+                print("❌ Error en subir_a_github:", e)
             try:
                 subir_json_a_github_api()
             except Exception as e:
