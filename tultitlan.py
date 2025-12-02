@@ -30,7 +30,7 @@ import base64
 # ===============================
 GITHUB_TOKEN_API = os.getenv("GITHUB_TOKEN_API")  # variable de entorno
 GITHUB_REPO_API = "elnet-git/INV_tultitlan"         # repositorio (user/repo)
-GITHUB_PATH_API = "Archivos/Export/inventario_render.json"
+GITHUB_PATH_API = "inventario_render.json"
 GITHUB_BRANCH = "main"
 
 # ===============================

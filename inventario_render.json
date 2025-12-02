@@ -1,0 +1,38 @@
+[
+    {
+        "codigo":"39029615",
+        "descripcion":null,
+        "stock":3,
+        "agencia":"mixquiahuala"
+    },
+    {
+        "codigo":"39104011",
+        "descripcion":"ARANDELA PLANA",
+        "stock":5,
+        "agencia":"mixquiahuala"
+    },
+    {
+        "codigo":"JR551002",
+        "descripcion":"ARANDELAS",
+        "stock":51,
+        "agencia":"mixquiahuala"
+    },
+    {
+        "codigo":"31151060",
+        "descripcion":"JGO DE ZAPATA DE FRENO",
+        "stock":15,
+        "agencia":"mixquiahuala"
+    },
+    {
+        "codigo":"36DH4174",
+        "descripcion":"JGO DE BALATAS DE FRENO",
+        "stock":69,
+        "agencia":"mixquiahuala"
+    },
+    {
+        "codigo":"36JU0114",
+        "descripcion":"JGO DE FRENO DEL CON CUNA",
+        "stock":11,
+        "agencia":"mixquiahuala"
+    }
+]
