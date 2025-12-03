@@ -10,6 +10,14 @@ import json, os
 app = Flask(__name__)
 CORS(app)  # Permitir CORS a todos los dominios
 
+# CORS EXPLÍCITO (Render lo necesita)
+@app.after_request
+def agregar_cors(resp):
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return resp
+
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 JSON_FILE = DATA_DIR / "inventario_render.json"
@@ -72,6 +80,5 @@ def limpiar_inventario():
 # INICIO DEL SERVIDOR
 # ===============================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5002))
+    port = int(os.environ.get("PORT", 5051))
     app.run(host="0.0.0.0", port=port)
-
