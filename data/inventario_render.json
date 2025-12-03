@@ -34,5 +34,11 @@
         "descripcion":"JGO DE FRENO DEL CON CUNA",
         "stock":11,
         "agencia":"TULTITLAN"
+    },
+    {
+        "codigo":"HJMG",
+        "descripcion":"HJ,HJ",
+        "stock":53,
+        "agencia":"TULTITLAN"
     }
 ]
