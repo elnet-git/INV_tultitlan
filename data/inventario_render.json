@@ -3,36 +3,36 @@
         "codigo":"39029615",
         "descripcion":null,
         "stock":3,
-        "agencia":"tultitlan"
+        "agencia":"TULTITLAN"
     },
     {
         "codigo":"39104011",
         "descripcion":"ARANDELA PLANA",
         "stock":5,
-        "agencia":"tultitlan"
+        "agencia":"TULTITLAN"
     },
     {
         "codigo":"JR551002",
         "descripcion":"ARANDELAS",
         "stock":51,
-        "agencia":"tultitlan"
+        "agencia":"TULTITLAN"
     },
     {
         "codigo":"31151060",
         "descripcion":"JGO DE ZAPATA DE FRENO",
         "stock":15,
-        "agencia":"tultitlan"
+        "agencia":"TULTITLAN"
     },
     {
         "codigo":"36DH4174",
         "descripcion":"JGO DE BALATAS DE FRENO",
         "stock":69,
-        "agencia":"tultitlan"
+        "agencia":"TULTITLAN"
     },
     {
         "codigo":"36JU0114",
         "descripcion":"JGO DE FRENO DEL CON CUNA",
         "stock":11,
-        "agencia":"tultitlan"
+        "agencia":"TULTITLAN"
     }
 ]
